@@ -63,6 +63,12 @@ class User(Base):
     def __init__(self, name):
         self.name = name
 
+    def __iter__(self):
+        yield ('id', self.id)
+        yield ('name', self.name)
+        yield ('notes', [n.id for n in self.notes])
+        yield ('identities', [i.id for i in self.identities])
+
 class Identity(Base):
     __tablename__ = 'identities'
     id = Column(Integer, primary_key=True)
