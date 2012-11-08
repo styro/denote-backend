@@ -62,3 +62,22 @@ class User(object):
     def delete(self):
         user_id = int(self.request.matchdict['id'])
         DBSession.query(models.User).filter(models.User.id==user_id).delete()
+
+@resource(collection_path='/notes', path='/notes/{id}')
+class Note(object):
+
+    def __init__(self, request):
+        self.request = request
+
+    def collection_get(self):
+        notes = DBSession.query(models.Note).all()
+        note_list = [{'id': n.id, 'title': n.title} for n in notes]
+        return {'notes': note_list}
+
+    def get(self):
+        note_id = int(self.request.matchdict['id'])
+        note = DBSession.query(models.Note).get(note_id)
+        if note:
+            return dict(note)
+        else:
+            raise HTTPNotFound

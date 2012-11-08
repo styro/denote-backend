@@ -1,4 +1,5 @@
 import datetime
+import calendar
 
 from sqlalchemy import (
     Table,
@@ -49,7 +50,7 @@ class Note(Base):
         yield ('id', self.id)
         yield ('title', self.title)
         yield ('content', self.content)
-        yield ('created_on', self.created_on)
+        yield ('created_on', calendar.timegm(self.created_on.utctimetuple()))
         yield ('created_by', self.created_by.name)
         yield ('creator_id', self.creator_id)
         yield ('labels', [{'id': l.id, 'name': l.name} for l in self.labels])
