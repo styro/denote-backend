@@ -45,6 +45,15 @@ class Note(Base):
         if creator:
             self.created_by = creator
 
+    def __iter__(self):
+        yield ('id', self.id)
+        yield ('title', self.title)
+        yield ('content', self.content)
+        yield ('created_on', self.created_on)
+        yield ('created_by', self.created_by.name)
+        yield ('creator_id', self.creator_id)
+        yield ('labels', [{'id': l.id, 'name': l.name} for l in self.labels])
+
 class Label(Base):
     __tablename__ = 'labels'
     id = Column(Integer, primary_key=True)
@@ -52,6 +61,11 @@ class Label(Base):
 
     def __init__(self, name):
         self.name = name
+
+    def __iter__(self):
+        yield ('id', self.id)
+        yield ('name', self.name)
+        yield ('notes', [{'id': n.id, 'title': n.title} for n in self.notes])
 
 class User(Base):
     __tablename__ = 'users'
@@ -66,11 +80,11 @@ class User(Base):
     def __iter__(self):
         yield ('id', self.id)
         yield ('name', self.name)
-        yield ('notes', [n.id for n in self.notes])
+        yield ('notes', [{'id': n.id, 'title': n.title} for n in self.notes])
         yield ('identities', [i.id for i in self.identities])
 
 class Identity(Base):
     __tablename__ = 'identities'
     id = Column(Integer, primary_key=True)
-    name = Column(UnicodeText, unique=True)
+    identifier = Column(UnicodeText, unique=True)
     user_id = Column(Integer, ForeignKey('users.id'))
