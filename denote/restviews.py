@@ -33,6 +33,9 @@ class User(object):
         body = self.request.json_body
         user = models.User(body['name'])
         DBSession.add(user)
+        # We flush the session to generate an id that we can add to the response
+        DBSession.flush()
+        return dict(user)
 
     def put(self):
         # Note: needs sending with 'Content-Type: application/json'
@@ -58,7 +61,6 @@ class User(object):
                     raise HTTPBadRequest('Request body contains an invalid identity id')
                 user.identities.append(identity)
 
-
     def delete(self):
         user_id = int(self.request.matchdict['id'])
         DBSession.query(models.User).filter(models.User.id==user_id).delete()
@@ -81,3 +83,148 @@ class Note(object):
             return dict(note)
         else:
             raise HTTPNotFound
+
+    def collection_post(self):
+        # Note: needs sending with 'Content-Type: application/json'
+        body = self.request.json_body
+        note = models.Note(body['title'])
+        if 'content' in body:
+            note.content = body['content']
+        if 'creator_id' in body:
+            # The id takes preference
+            note.creator_id = body['creator_id']
+        elif 'created_by' in body:
+            name = body['created_by']
+            user = DBSession.query(models.User).filter_by(name=name).first()
+            if user:
+                note.creator_id = user.id
+        if 'labels' in body and len(body['labels']) > 0:
+            lids = [x['id'] for x in body['labels']]
+            labels = DBSession.query(models.Label).filter(models.Label.id.in_(lids))
+            note.labels = list(labels)
+        DBSession.add(note)
+        # We flush the session to generate an id that we can add to the response
+        DBSession.flush()
+        return dict(note)
+
+    def put(self):
+        # Note: needs sending with 'Content-Type: application/json'
+        note_id = int(self.request.matchdict['id'])
+        note = DBSession.query(models.Note).get(note_id)
+        if not note:
+            raise HTTPNotFound
+        body = self.request.json_body
+        if 'title' in body:
+            note.title = body['title']
+        if 'content' in body:
+            note.content = body['content']
+        # We ignore created_on, created_by, creator_id as they are 'immutable'
+        if 'labels' in body:
+            user.labels = []
+            for label_dict in body['labels']:
+                label = DBSession.query(models.Label).get(label_dict['id'])
+                if not label:
+                    raise HTTPBadRequest('Request body contains an invalid note id')
+                user.labels.append(label)
+
+    def delete(self):
+        note_id = int(self.request.matchdict['id'])
+        DBSession.query(models.Note).filter(models.Note.id==note_id).delete()
+
+@resource(collection_path='/labels', path='/labels/{id}')
+class Label(object):
+
+    def __init__(self, request):
+        self.request = request
+
+    def collection_get(self):
+        labels = DBSession.query(models.Label).all()
+        label_list = [{'id': l.id, 'name': l.name, 'note_count': len(l.notes)} for l in labels]
+        return {'labels': label_list}
+
+    def get(self):
+        label_id = int(self.request.matchdict['id'])
+        label = DBSession.query(models.Label).get(label_id)
+        if label:
+            return dict(label)
+        else:
+            raise HTTPNotFound
+
+    def collection_post(self):
+        # Note: needs sending with 'Content-Type: application/json'
+        body = self.request.json_body
+        label = models.Label(body['name'])
+        DBSession.add(label)
+        # We flush the session to generate an id that we can add to the response
+        DBSession.flush()
+        return dict(label)
+
+    def put(self):
+        # Note: needs sending with 'Content-Type: application/json'
+        label_id = int(self.request.matchdict['id'])
+        label = DBSession.query(models.Label).get(label_id)
+        if not label:
+            raise HTTPNotFound
+        body = self.request.json_body
+        if 'name' in body:
+            label.name = body['name']
+        if 'notes' in body:
+            label.notes = []
+            for note_dict in body['notes']:
+                note = DBSession.query(models.Note).get(note_dict['id'])
+                if not note:
+                    raise HTTPBadRequest('Request body contains an invalid note id')
+                label.notes.append(note)
+
+    def delete(self):
+        label_id = int(self.request.matchdict['id'])
+        DBSession.query(models.Label).filter(models.Label.id==label_id).delete()
+
+@resource(collection_path='/identities', path='/identities/{id}')
+class Identity(object):
+
+    def __init__(self, request):
+        self.request = request
+
+    def collection_get(self):
+        identities = DBSession.query(models.Identity).all()
+        identity_list = [{'id': i.id, 'identifier': i.identifier, 'user_id': i.user_id} for i in identities]
+        return {'identities': identity_list}
+
+    def get(self):
+        identity_id = int(self.request.matchdict['id'])
+        identity = DBSession.query(models.Identity).get(identity_id)
+        if identity:
+            return dict(identity)
+        else:
+            raise HTTPNotFound
+
+    def collection_post(self):
+        # Note: needs sending with 'Content-Type: application/json'
+        body = self.request.json_body
+        identity = models.Label(body['identifier'], body['user_id'])
+        DBSession.add(identifier)
+        # Check for valid user_id
+        # We flush the session to generate an id that we can add to the response
+        DBSession.flush()
+        return dict(identifier)
+
+    def put(self):
+        # Note: needs sending with 'Content-Type: application/json'
+        identity_id = int(self.request.matchdict['id'])
+        identity = DBSession.query(models.Identity).get(identity_id)
+        if not identity:
+            raise HTTPNotFound
+        body = self.request.json_body
+        if 'identifier' in body:
+            identity.identifier = body['identifier']
+        if 'user_id' in body:
+            user = DBSession.query(models.User).get(body['user_id'])
+            if user:
+                identity.user = user
+            else:
+                raise HTTPBadRequest('Request body contains an invalid user id')
+
+    def delete(self):
+        label_id = int(self.request.matchdict['id'])
+        DBSession.query(models.Label).filter(models.Label.id==label_id).delete()
