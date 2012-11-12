@@ -38,13 +38,15 @@ class Note(Base):
     creator_id = Column(Integer, ForeignKey('users.id'))
     labels = relationship("Label", secondary=note_label_table, backref="notes")
 
-    def __init__(self, title, content=None, creator=None):
+    def __init__(self, title, content=None, creator=None, labels=None):
         self.title = title
         self.created_on = datetime.datetime.utcnow()
         if content:
             self.content = content
         if creator:
             self.created_by = creator
+        if labels and len(labels) > 0:
+            self.labels = labels
 
     def __iter__(self):
         yield ('id', self.id)
@@ -89,3 +91,12 @@ class Identity(Base):
     id = Column(Integer, primary_key=True)
     identifier = Column(UnicodeText, unique=True)
     user_id = Column(Integer, ForeignKey('users.id'))
+
+    def __init__(self, identifier, user):
+        self.identifier = identifier
+        self.user = user
+
+    def __iter__(self):
+        yield ('id', self.id)
+        yield ('identifier', self.identifier)
+        yield ('user_id', self.user_id)
