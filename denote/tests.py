@@ -12,12 +12,12 @@ class TestMyView(unittest.TestCase):
         engine = create_engine('sqlite://')
         from .models import (
             Base,
-            MyModel,
+            User,
             )
         DBSession.configure(bind=engine)
         Base.metadata.create_all(engine)
         with transaction.manager:
-            model = MyModel(name='one', value=55)
+            model = User(name=u'one')
             DBSession.add(model)
 
     def tearDown(self):
@@ -28,5 +28,5 @@ class TestMyView(unittest.TestCase):
         from .views import my_view
         request = testing.DummyRequest()
         info = my_view(request)
-        self.assertEqual(info['one'].name, 'one')
+        self.assertEqual(info['user'].name, 'one')
         self.assertEqual(info['project'], 'pyramid-alchemy')
