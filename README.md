@@ -1,2 +1,2 @@
-denote-backend
+denote-pyramid
 ==============
