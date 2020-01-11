@@ -47,19 +47,13 @@ class User(object):
         if 'name' in body:
             user.name = body['name']
         if 'notes' in body:
-            user.notes = []
-            for note_dict in body['notes']:
-                note = DBSession.query(models.Note).get(note_dict['id'])
-                if not note:
-                    raise HTTPBadRequest('Request body contains an invalid note id')
-                user.notes.append(note)
+            note_ids = [n['id'] for n in body['notes']]
+            note_query = DBSession.query(models.Note).filter(models.Note.id.in_(note_ids))
+            user.notes = note_query.all()
         if 'identities' in body:
-            user.identities = []
-            for ident_id in body['identities']:
-                identity = DBSession.query(models.Identity).get(ident_id)
-                if not identity:
-                    raise HTTPBadRequest('Request body contains an invalid identity id')
-                user.identities.append(identity)
+            id_query = DBSession.query(models.Identity)
+            id_query.filter(models.Identity.id.in_(body['identities']))
+            user.identities = id_query.all()
 
     def delete(self):
         user_id = int(self.request.matchdict['id'])
@@ -100,8 +94,8 @@ class Note(object):
                 note.creator_id = user.id
         if 'labels' in body and len(body['labels']) > 0:
             lids = [x['id'] for x in body['labels']]
-            labels = DBSession.query(models.Label).filter(models.Label.id.in_(lids))
-            note.labels = list(labels)
+            label_query = DBSession.query(models.Label).filter(models.Label.id.in_(lids))
+            note.labels = label_query.all()
         DBSession.add(note)
         # We flush the session to generate an id that we can add to the response
         DBSession.flush()
@@ -120,12 +114,9 @@ class Note(object):
             note.content = body['content']
         # We ignore created_on, created_by, creator_id as they are 'immutable'
         if 'labels' in body:
-            user.labels = []
-            for label_dict in body['labels']:
-                label = DBSession.query(models.Label).get(label_dict['id'])
-                if not label:
-                    raise HTTPBadRequest('Request body contains an invalid note id')
-                user.labels.append(label)
+            lids = [l['id'] for l in body['labels']]
+            label_query = DBSession.query(models.Label).filter(models.Label.id.in_(lids))
+            note.labels = label_query.all()
 
     def delete(self):
         note_id = int(self.request.matchdict['id'])
@@ -169,12 +160,9 @@ class Label(object):
         if 'name' in body:
             label.name = body['name']
         if 'notes' in body:
-            label.notes = []
-            for note_dict in body['notes']:
-                note = DBSession.query(models.Note).get(note_dict['id'])
-                if not note:
-                    raise HTTPBadRequest('Request body contains an invalid note id')
-                label.notes.append(note)
+            note_ids = [n['id'] for n in body['notes']]
+            note_query = DBSession.query(models.Note).filter(models.Note.id.in_(note_ids))
+            label.notes = note_query.all()
 
     def delete(self):
         label_id = int(self.request.matchdict['id'])
